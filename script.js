@@ -14,17 +14,43 @@ let score_val = document.querySelector('.score_val');
 let message = document.querySelector('.message');
 let score_title = document.querySelector('.score_title');
 
+// quiz logic here....
+let lives = 5;
+let isQuizActive = false;
+let isGameOver = false;
+
+const quizContainer = document.getElementById("quiz-container");
+const questionText = document.getElementById("question");
+const options = Array.from(document.querySelectorAll("#quiz-container button"));
+
+const questions = [
+    { question: "What is 2+2?", options: ["3", "4", "5", "6"], correct: 1 },
+    { question: "What is the capital of France?", options: ["Paris", "London", "Berlin", "Madrid"], correct: 0 },
+    { question: "Which planet is known as the Red Planet?", options: ["Earth", "Mars", "Jupiter", "Saturn"], correct: 1 },
+    { question: "What is the largest ocean on Earth?", options: ["Atlantic", "Indian", "Arctic", "Pacific"], correct: 3 },
+    { question: "How many continents are there?", options: ["5", "6", "7", "8"], correct: 2 },
+];
+
+const gameOverContainer = document.getElementById("game-over-container");
+const finalScoreText = document.getElementById("final-score");
+
+const scoreDisplay = document.getElementById("score");
+const livesDisplay = document.getElementById("lives");
+
+
 let game_state = 'Start';
 img.style.display = 'none';
 message.classList.add('messageStyle');
 
 document.addEventListener('keydown', (e) => {
     
-    if(e.key == 'Enter' && game_state != 'Play'){
+    if(e.key == 'Enter' && game_state != 'Play' && !isQuizActive && !isGameOver){
         document.querySelectorAll('.pipe_sprite').forEach((e) => {
             e.remove();
         });
+
         img.style.display = 'block';
+        quizContainer.style.display = 'block';
         bird.style.top = '40vh';
         game_state = 'Play';
         message.innerHTML = '';
@@ -56,6 +82,8 @@ function play(){
                     return;
                 }else{
                     if(pipe_sprite_props.right < bird_props.left && pipe_sprite_props.right + move_speed >= bird_props.left && element.increase_score == '1'){
+                        isGameOver = false;
+                        gameOverContainer.style.display = "none";
                         score_val.innerHTML =+ score_val.innerHTML + 1;
                         sound_point.play();
                     }
@@ -89,6 +117,7 @@ function play(){
             message.style.left = '28vw';
             window.location.reload();
             message.classList.remove('messageStyle');
+            showQuiz();
             return;
         }
         bird.style.top = bird_props.top + bird_dy + 'px';
@@ -103,6 +132,7 @@ function play(){
 
     function create_pipe(){
         if(game_state != 'Play') return;
+        if(!isQuizActive) {showQuiz();}
 
         if(pipe_seperation > 115){
             pipe_seperation = 0;
@@ -126,4 +156,78 @@ function play(){
         requestAnimationFrame(create_pipe);
     }
     requestAnimationFrame(create_pipe);
+}
+
+//quiz logic writes here......
+function showQuiz() {
+
+    isQuizActive = true;
+    quizContainer.style.display = "block";
+    const randomQuestion = questions[Math.floor(Math.random() * questions.length)];
+    questionText.textContent = randomQuestion.question;
+    options.forEach((option, index) => {
+        option.textContent = randomQuestion.options[index];
+        option.dataset.correct = index === randomQuestion.correct;
+    });
+}
+
+function checkAnswer(selectedOption) {
+    if (options[selectedOption].dataset.correct === "true") {
+        resetGameAfterQuiz();
+    } else {
+        lives--;
+        if (lives <= 0) {
+            gameOver();
+        } else {
+            updateScoreAndLivesDisplay();
+            resetGameAfterQuiz();
+        }
+    }
+}
+
+function resetGameAfterQuiz() {
+    isQuizActive = false;
+    quizContainer.style.display = "none";
+    game_state = 'End';
+    message.style.left = '28vw';
+    window.location.reload();
+    message.classList.remove('messageStyle');
+    return;
+}
+
+function updateScoreAndLivesDisplay() {
+    scoreDisplay.textContent = `Score: ${score}`;
+    livesDisplay.innerHTML = ''; // Clear previous hearts
+    for (let i = 0; i < lives; i++) {
+        const heart = document.createElement('img');
+        heart.src = 'heart.png';
+        heart.width = 30;
+        heart.height = 30;
+        livesDisplay.appendChild(heart);
+    }
+}
+
+function gameOver() {
+    isGameOver = true;
+    gameOverContainer.style.display = "block";
+    finalScoreText.textContent = score;
+}
+
+function restartGame() {
+    isGameOver = false;
+    gameOverContainer.style.display = "none";
+    score = 0;
+    lives = 5;
+    bird.x = canvas.width / 4;
+    bird.y = canvas.height / 2;
+    bird.velocity = 0;
+    pipes = [];
+    updateScoreAndLivesDisplay();
+    gameLoop();
+}
+
+function drawLives() {
+    // Clear the lives area
+    ctx.clearRect(0, 0, canvas.width, 30);
+    // Not used anymore since we are using HTML elements for hearts
 }
